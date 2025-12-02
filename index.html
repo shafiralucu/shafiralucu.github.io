@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Fira's To-Do & Finance Dashboard</title>
+  <title>Fira's Life Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root {
@@ -111,6 +111,13 @@
       color: var(--text-muted);
     }
 
+    .avatar-block {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
     .avatar {
       width: 40px;
       height: 40px;
@@ -124,6 +131,25 @@
       font-size: 18px;
       box-shadow: 0 6px 14px rgba(255, 120, 196, 0.45);
       flex-shrink: 0;
+    }
+
+    #auth-btn {
+      border: none;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 600;
+      background: #ffe3f4;
+      color: #d33692;
+      cursor: pointer;
+    }
+
+    #auth-status {
+      font-size: 9px;
+      color: var(--text-muted);
+      max-width: 160px;
+      text-align: right;
+      word-break: break-all;
     }
 
     .mood-card {
@@ -419,8 +445,7 @@
       font-weight: 600;
     }
 
-    #category-filter,
-    #debt-filter {
+    #category-filter {
       font-size: 11px;
       padding: 5px 10px;
       border-radius: var(--radius-pill);
@@ -429,7 +454,6 @@
       color: var(--text-main);
     }
 
-    /* Finance section styles */
     .finance-card {
       background: linear-gradient(135deg, #fffdfc, #fff1f8);
       border-radius: 18px;
@@ -484,14 +508,17 @@
 </head>
 <body>
   <div class="app">
-    <!-- Header + mood -->
     <div class="top-bar">
       <div class="top-text">
         <div class="top-date-pill" id="today-pill">Today • --</div>
         <div class="top-greeting">Hi, Fira 👋</div>
         <div class="top-question">How do you feel today?</div>
       </div>
-      <div class="avatar">F</div>
+      <div class="avatar-block">
+        <div class="avatar">F</div>
+        <button id="auth-btn">Sign in</button>
+        <span id="auth-status"></span>
+      </div>
     </div>
 
     <div class="mood-card">
@@ -509,12 +536,11 @@
       </div>
     </div>
 
-    <!-- Main grid: left = todo, right = finance -->
     <div class="grid">
       <!-- LEFT: To-do -->
       <div>
         <h1 class="section-title">Daily To-Do</h1>
-        <p class="subtitle">Cute cycle-app vibes 💗 track tasks, due dates & wins.</p>
+        <p class="subtitle">Tasks sync across devices when you sign in 💗</p>
 
         <form id="todo-form">
           <div class="row">
@@ -570,7 +596,7 @@
         <div class="finance-card">
           <div class="finance-title">Debt Tracker</div>
           <div class="finance-subtitle">
-            Catat siapa yang kamu utangin & siapa yang ngutang ke kamu.
+            Catat siapa yang kamu utangin & siapa yang ngutang ke kamu (local di device ini).
           </div>
 
           <form id="debt-form">
@@ -599,7 +625,7 @@
         <div class="finance-card">
           <div class="finance-title">Monthly Bills</div>
           <div class="finance-subtitle">
-            Reminder tagihan bulanan (manual, disimpan di browser kamu).
+            Reminder tagihan bulanan (local di browser).
           </div>
 
           <form id="bill-form">
@@ -623,19 +649,80 @@
     </div>
   </div>
 
-  <script>
-    /* ---------- Shared / mood ---------- */
+  <!-- APP LOGIC + FIREBASE -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      signInWithPopup,
+      signOut,
+      onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      doc,
+      updateDoc,
+      deleteDoc,
+      onSnapshot,
+      query,
+      orderBy,
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    // === Firebase config kamu ===
+    const firebaseConfig = {
+      apiKey: "AIzaSyB2VVmt2zI4SKlVVvT6zY2zvgvApBAsifI",
+      authDomain: "fira-dashboard.firebaseapp.com",
+      projectId: "fira-dashboard",
+      storageBucket: "fira-dashboard.firebasestorage.app",
+      messagingSenderId: "40290902748",
+      appId: "1:40290902748:web:8b4118c6908426fbdd4a19"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+    const db = getFirestore(app);
+
+    // DOM
     const todayPill = document.getElementById("today-pill");
     const moodLabel = document.getElementById("mood-label");
     const moodButtons = document.querySelectorAll(".mood-btn");
+    const authBtn = document.getElementById("auth-btn");
+    const authStatus = document.getElementById("auth-status");
 
-    const MOOD_KEY_PREFIX = "fira-mood-";
+    const todoForm = document.getElementById("todo-form");
+    const todoInput = document.getElementById("todo-input");
+    const todoList = document.getElementById("todo-list");
+    const taskCount = document.getElementById("task-count");
+    const filterButtons = document.querySelectorAll(".filter-btns button");
+    const categorySelect = document.getElementById("category-select");
+    const dueDateInput = document.getElementById("due-date");
+    const dueTimeInput = document.getElementById("due-time");
+    const categoryFilter = document.getElementById("category-filter");
 
+    const debtForm = document.getElementById("debt-form");
+    const debtNameInput = document.getElementById("debt-name");
+    const debtAmountInput = document.getElementById("debt-amount");
+    const debtTypeSelect = document.getElementById("debt-type");
+    const debtDueInput = document.getElementById("debt-due");
+    const debtList = document.getElementById("debt-list");
+    const debtSummary = document.getElementById("debt-summary");
+
+    const billForm = document.getElementById("bill-form");
+    const billNameInput = document.getElementById("bill-name");
+    const billAmountInput = document.getElementById("bill-amount");
+    const billNextDueInput = document.getElementById("bill-next-due");
+    const billList = document.getElementById("bill-list");
+    const billSummary = document.getElementById("bill-summary");
+
+    // UTIL
     function getTodayKey() {
       const d = new Date();
       return d.toISOString().slice(0, 10);
     }
-
     function setTodayPill() {
       const d = new Date();
       const dateText = d.toLocaleDateString("en-GB", {
@@ -645,7 +732,39 @@
       });
       todayPill.textContent = "Today • " + dateText;
     }
+    function formatDate(dateStr) {
+      if (!dateStr) return "";
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    }
+    function formatDateOnly(dateStr) {
+      if (!dateStr) return "";
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+      });
+    }
+    function formatTime(hhmm) {
+      if (!hhmm) return "";
+      return hhmm.slice(0, 5);
+    }
+    function mapCategoryToClass(category) {
+      if (category === "The Lab") return "lab";
+      if (category === "Self Development") return "self";
+      if (category === "Health") return "health";
+      if (category === "Admin/Errands") return "admin";
+      return "other";
+    }
 
+    // Mood (local)
+    const MOOD_KEY_PREFIX = "fira-mood-";
     function loadMood() {
       const key = MOOD_KEY_PREFIX + getTodayKey();
       const saved = localStorage.getItem(key);
@@ -666,12 +785,10 @@
         moodLabel.textContent = "not set yet";
       }
     }
-
     function saveMood(mood, emoji) {
       const key = MOOD_KEY_PREFIX + getTodayKey();
       localStorage.setItem(key, JSON.stringify({ mood, emoji }));
     }
-
     moodButtons.forEach((btn) => {
       btn.addEventListener("click", () => {
         const mood = btn.dataset.mood;
@@ -683,98 +800,61 @@
       });
     });
 
-    /* ---------- To-do logic ---------- */
-    const form = document.getElementById("todo-form");
-    const input = document.getElementById("todo-input");
-    const list = document.getElementById("todo-list");
-    const taskCount = document.getElementById("task-count");
-    const filterButtons = document.querySelectorAll(".filter-btns button");
-    const categorySelect = document.getElementById("category-select");
-    const dueDateInput = document.getElementById("due-date");
-    const dueTimeInput = document.getElementById("due-time");
-    const categoryFilter = document.getElementById("category-filter");
-
-    const STORAGE_KEY_V2 = "fira-todo-list-v2";
-    const STORAGE_KEY_V1 = "fira-todo-list-v1";
-
+    // AUTH
+    let currentUser = null;
+    let tasksUnsubscribe = null;
     let tasks = [];
-    let currentFilter = "all";
-    let currentCategoryFilter = "all";
-
-    function mapCategoryToClass(category) {
-      if (category === "The Lab") return "lab";
-      if (category === "Self Development") return "self";
-      if (category === "Health") return "health";
-      if (category === "Admin/Errands") return "admin";
-      return "other";
-    }
-
-    function formatDate(dateStr) {
-      if (!dateStr) return "";
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return dateStr;
-      return d.toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      });
-    }
-
-    function formatDateOnly(dateStr) {
-      if (!dateStr) return "";
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return dateStr;
-      return d.toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-      });
-    }
-
-    function formatTime(hhmm) {
-      if (!hhmm) return "";
-      return hhmm.slice(0, 5);
-    }
-
-    function loadTasks() {
-      const savedV2 = localStorage.getItem(STORAGE_KEY_V2);
-      if (savedV2) {
-        tasks = JSON.parse(savedV2);
-        renderTasks();
-        return;
+    authBtn.addEventListener("click", async () => {
+      if (currentUser) {
+        await signOut(auth);
+      } else {
+        await signInWithPopup(auth, provider);
       }
+    });
 
-      const savedV1 = localStorage.getItem(STORAGE_KEY_V1);
-      if (savedV1) {
-        const oldTasks = JSON.parse(savedV1);
-        tasks = oldTasks.map((t) => ({
-          id: t.id || Date.now(),
-          text: t.text || "",
-          done: !!t.done,
-          category: "Self Development",
-          dueDate: "",
-          dueTime: "",
-          createdAt: new Date().toISOString(),
-          completedAt: t.done ? new Date().toISOString() : null,
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user || null;
+      if (currentUser) {
+        authBtn.textContent = "Sign out";
+        authStatus.textContent = currentUser.email;
+        subscribeTasks();
+      } else {
+        authBtn.textContent = "Sign in";
+        authStatus.textContent = "";
+        tasks = [];
+        if (tasksUnsubscribe) {
+          tasksUnsubscribe();
+          tasksUnsubscribe = null;
+        }
+        renderTasks();
+      }
+    });
+
+    // Firestore tasks
+    function subscribeTasks() {
+      if (!currentUser) return;
+      if (tasksUnsubscribe) tasksUnsubscribe();
+      const tasksRef = collection(db, "users", currentUser.uid, "tasks");
+      const q = query(tasksRef, orderBy("createdAt", "asc"));
+      tasksUnsubscribe = onSnapshot(q, (snapshot) => {
+        tasks = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...docSnap.data(),
         }));
-        saveTasks();
         renderTasks();
+      });
+    }
+
+    async function addTaskToDb(text, category, dueDate, dueTime) {
+      if (!currentUser) {
+        alert("Please sign in first to sync tasks 🙏");
         return;
       }
-
-      tasks = [];
-      renderTasks();
-    }
-
-    function saveTasks() {
-      localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(tasks));
-    }
-
-    function addTask(text, category, dueDate, dueTime) {
       const trimmed = text.trim();
       if (!trimmed) return;
       const now = new Date().toISOString();
-      tasks.push({
-        id: Date.now(),
+      const tasksRef = collection(db, "users", currentUser.uid, "tasks");
+      await addDoc(tasksRef, {
         text: trimmed,
         done: false,
         category: category || "Self Development",
@@ -783,45 +863,27 @@
         createdAt: now,
         completedAt: null,
       });
-      saveTasks();
-      renderTasks();
     }
 
-    function toggleTask(id) {
-      tasks = tasks.map((task) => {
-        if (task.id === id) {
-          const now = new Date().toISOString();
-          const newDone = !task.done;
-          return {
-            ...task,
-            done: newDone,
-            completedAt: newDone ? now : null,
-          };
-        }
-        return task;
+    async function toggleTaskInDb(id, done) {
+      if (!currentUser) return;
+      const taskRef = doc(db, "users", currentUser.uid, "tasks", id);
+      const now = new Date().toISOString();
+      await updateDoc(taskRef, {
+        done,
+        completedAt: done ? now : null,
       });
-      saveTasks();
-      renderTasks();
     }
 
-    function deleteTask(id) {
-      tasks = tasks.filter((task) => task.id !== id);
-      saveTasks();
-      renderTasks();
+    async function deleteTaskInDb(id) {
+      if (!currentUser) return;
+      const taskRef = doc(db, "users", currentUser.uid, "tasks", id);
+      await deleteDoc(taskRef);
     }
 
-    function setFilter(filter) {
-      currentFilter = filter;
-      filterButtons.forEach((btn) => {
-        btn.classList.toggle("active", btn.dataset.filter === filter);
-      });
-      renderTasks();
-    }
-
-    function setCategoryFilter(cat) {
-      currentCategoryFilter = cat;
-      renderTasks();
-    }
+    // Render tasks
+    let currentFilter = "all";
+    let currentCategoryFilter = "all";
 
     function getFilteredTasks() {
       let filtered = tasks;
@@ -834,9 +896,8 @@
     }
 
     function renderTasks() {
-      list.innerHTML = "";
+      todoList.innerHTML = "";
       const filtered = getFilteredTasks();
-
       filtered.forEach((task) => {
         const li = document.createElement("li");
         if (task.done) li.classList.add("done");
@@ -847,7 +908,9 @@
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
         checkbox.checked = task.done;
-        checkbox.addEventListener("change", () => toggleTask(task.id));
+        checkbox.addEventListener("change", () =>
+          toggleTaskInDb(task.id, !task.done)
+        );
 
         const content = document.createElement("div");
 
@@ -860,7 +923,7 @@
 
         const catSpan = document.createElement("span");
         catSpan.className = `chip ${mapCategoryToClass(task.category)}`;
-        catSpan.textContent = task.category;
+        catSpan.textContent = task.category || "Self Development";
         meta.appendChild(catSpan);
 
         if (task.dueDate || task.dueTime) {
@@ -887,11 +950,11 @@
         const deleteBtn = document.createElement("button");
         deleteBtn.className = "delete-btn";
         deleteBtn.textContent = "Delete";
-        deleteBtn.addEventListener("click", () => deleteTask(task.id));
+        deleteBtn.addEventListener("click", () => deleteTaskInDb(task.id));
 
         li.appendChild(main);
         li.appendChild(deleteBtn);
-        list.appendChild(li);
+        todoList.appendChild(li);
       });
 
       const activeCount = tasks.filter((t) => !t.done).length;
@@ -900,50 +963,47 @@
         total === 0 ? "No tasks" : `${activeCount} active / ${total} total`;
     }
 
-    form.addEventListener("submit", (e) => {
+    todoForm.addEventListener("submit", (e) => {
       e.preventDefault();
-      addTask(
-        input.value,
+      addTaskToDb(
+        todoInput.value,
         categorySelect.value,
         dueDateInput.value,
         dueTimeInput.value
       );
-      input.value = "";
-      input.focus();
+      todoInput.value = "";
+      todoInput.focus();
     });
 
     filterButtons.forEach((btn) => {
       btn.addEventListener("click", () => {
-        setFilter(btn.dataset.filter);
+        currentFilter = btn.dataset.filter;
+        filterButtons.forEach((b) =>
+          b.classList.toggle("active", b === btn)
+        );
+        renderTasks();
       });
     });
 
     categoryFilter.addEventListener("change", () => {
-      setCategoryFilter(categoryFilter.value);
+      currentCategoryFilter = categoryFilter.value;
+      renderTasks();
     });
 
-    /* ---------- Debt tracker ---------- */
-    const debtForm = document.getElementById("debt-form");
-    const debtNameInput = document.getElementById("debt-name");
-    const debtAmountInput = document.getElementById("debt-amount");
-    const debtTypeSelect = document.getElementById("debt-type");
-    const debtDueInput = document.getElementById("debt-due");
-    const debtList = document.getElementById("debt-list");
-    const debtSummary = document.getElementById("debt-summary");
-
+    // Debt & Bills (localStorage)
     const STORAGE_DEBTS = "fira-debts-v1";
+    const STORAGE_BILLS = "fira-bills-v1";
     let debts = [];
+    let bills = [];
 
     function loadDebts() {
       const saved = localStorage.getItem(STORAGE_DEBTS);
       debts = saved ? JSON.parse(saved) : [];
       renderDebts();
     }
-
     function saveDebts() {
       localStorage.setItem(STORAGE_DEBTS, JSON.stringify(debts));
     }
-
     function addDebt(name, amount, type, dueDate) {
       const trimmed = name.trim();
       const num = Number(amount);
@@ -958,13 +1018,11 @@
       saveDebts();
       renderDebts();
     }
-
     function deleteDebt(id) {
       debts = debts.filter((d) => d.id !== id);
       saveDebts();
       renderDebts();
     }
-
     function renderDebts() {
       debtList.innerHTML = "";
       let totalIOwe = 0;
@@ -1037,27 +1095,22 @@
       debtNameInput.focus();
     });
 
-    /* ---------- Monthly bills ---------- */
-    const billForm = document.getElementById("bill-form");
-    const billNameInput = document.getElementById("bill-name");
-    const billAmountInput = document.getElementById("bill-amount");
-    const billNextDueInput = document.getElementById("bill-next-due");
-    const billList = document.getElementById("bill-list");
-    const billSummary = document.getElementById("bill-summary");
-
-    const STORAGE_BILLS = "fira-bills-v1";
-    let bills = [];
+    function daysUntil(dateStr) {
+      const today = new Date();
+      const target = new Date(dateStr);
+      if (isNaN(target.getTime())) return null;
+      const diffMs = target.setHours(0,0,0,0) - today.setHours(0,0,0,0);
+      return Math.round(diffMs / (1000 * 60 * 60 * 24));
+    }
 
     function loadBills() {
       const saved = localStorage.getItem(STORAGE_BILLS);
       bills = saved ? JSON.parse(saved) : [];
       renderBills();
     }
-
     function saveBills() {
       localStorage.setItem(STORAGE_BILLS, JSON.stringify(bills));
     }
-
     function addBill(name, amount, nextDue) {
       const trimmed = name.trim();
       const num = Number(amount);
@@ -1071,21 +1124,11 @@
       saveBills();
       renderBills();
     }
-
     function deleteBill(id) {
       bills = bills.filter((b) => b.id !== id);
       saveBills();
       renderBills();
     }
-
-    function daysUntil(dateStr) {
-      const today = new Date();
-      const target = new Date(dateStr);
-      if (isNaN(target.getTime())) return null;
-      const diffMs = target.setHours(0,0,0,0) - today.setHours(0,0,0,0);
-      return Math.round(diffMs / (1000 * 60 * 60 * 24));
-    }
-
     function renderBills() {
       billList.innerHTML = "";
       let dueSoonCount = 0;
@@ -1155,12 +1198,11 @@
       billNameInput.focus();
     });
 
-    /* ---------- Init ---------- */
+    // INIT
     setTodayPill();
-    loadTasks();
+    loadMood();
     loadDebts();
     loadBills();
-    loadMood();
   </script>
 </body>
 </html>
