@@ -47,7 +47,6 @@
       overflow: hidden;
     }
 
-    /* soft glow */
     .app::before,
     .app::after {
       content: "";
@@ -72,7 +71,6 @@
       left: -40px;
     }
 
-    /* Top header */
     .top-bar {
       display: flex;
       justify-content: space-between;
@@ -128,7 +126,6 @@
       flex-shrink: 0;
     }
 
-    /* Mood card */
     .mood-card {
       background: linear-gradient(135deg, #fff1f8, #fffdfc);
       border-radius: 18px;
@@ -191,7 +188,6 @@
       transform: translateY(-1px);
     }
 
-    /* Title + subtitle for todo section */
     h1 {
       margin: 8px 0 2px;
       font-size: 20px;
@@ -449,7 +445,6 @@
 </head>
 <body>
   <div class="app">
-    <!-- header -->
     <div class="top-bar">
       <div class="top-text">
         <div class="top-date-pill" id="today-pill">Today • --</div>
@@ -459,7 +454,6 @@
       <div class="avatar">F</div>
     </div>
 
-    <!-- mood card -->
     <div class="mood-card">
       <div class="mood-left">
         <div class="mood-title">Today’s mood</div>
@@ -551,7 +545,7 @@
 
     function getTodayKey() {
       const d = new Date();
-      return d.toISOString().slice(0, 10); // YYYY-MM-DD
+      return d.toISOString().slice(0, 10);
     }
 
     function setTodayPill() {
@@ -785,7 +779,6 @@
       setCategoryFilter(categoryFilter.value);
     });
 
-    /* Mood logic */
     function loadMood() {
       const key = MOOD_KEY_PREFIX + getTodayKey();
       const saved = localStorage.getItem(key);
@@ -793,3 +786,39 @@
         moodLabel.textContent = "not set yet";
         moodButtons.forEach((b) => b.classList.remove("active"));
         return;
+      }
+      try {
+        const { mood, emoji } = JSON.parse(saved);
+        moodLabel.textContent = `${emoji} ${mood}`;
+        moodButtons.forEach((btn) => {
+          const isActive =
+            btn.dataset.mood === mood && btn.dataset.emoji === emoji;
+          btn.classList.toggle("active", isActive);
+        });
+      } catch {
+        moodLabel.textContent = "not set yet";
+      }
+    }
+
+    function saveMood(mood, emoji) {
+      const key = MOOD_KEY_PREFIX + getTodayKey();
+      localStorage.setItem(key, JSON.stringify({ mood, emoji }));
+    }
+
+    moodButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const mood = btn.dataset.mood;
+        const emoji = btn.dataset.emoji;
+        moodButtons.forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        moodLabel.textContent = `${emoji} ${mood}`;
+        saveMood(mood, emoji);
+      });
+    });
+
+    setTodayPill();
+    loadTasks();
+    loadMood();
+  </script>
+</body>
+</html>
