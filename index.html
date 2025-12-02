@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Fira's To-Do List</title>
+  <title>Fira's To-Do & Finance Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root {
@@ -38,7 +38,7 @@
     .app {
       background: var(--card-bg);
       width: 100%;
-      max-width: 540px;
+      max-width: 720px;
       padding: 22px 20px 18px;
       border-radius: var(--radius-card);
       box-shadow: var(--shadow-soft);
@@ -188,9 +188,9 @@
       transform: translateY(-1px);
     }
 
-    h1 {
+    h1.section-title {
       margin: 8px 0 2px;
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 800;
       letter-spacing: 0.02em;
       color: var(--text-main);
@@ -204,6 +204,21 @@
       color: var(--text-muted);
       position: relative;
       z-index: 1;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 720px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .app {
+        padding: 18px 14px;
+      }
     }
 
     form {
@@ -224,7 +239,8 @@
     input[type="text"],
     select,
     input[type="date"],
-    input[type="time"] {
+    input[type="time"],
+    input[type="number"] {
       padding: 9px 11px;
       border-radius: 14px;
       border: 1px solid #f7d7ec;
@@ -233,9 +249,10 @@
       color: var(--text-main);
     }
 
-    input[type="text"] {
+    input[type="text"],
+    input[type="number"] {
       flex: 1;
-      min-width: 160px;
+      min-width: 120px;
     }
 
     select,
@@ -263,32 +280,26 @@
       white-space: nowrap;
     }
 
-    #add-btn {
+    .primary-btn {
       background-image: linear-gradient(135deg, var(--primary-soft), var(--primary));
       color: white;
       box-shadow: 0 8px 18px rgba(229, 60, 141, 0.35);
     }
 
-    #add-btn:hover {
+    .primary-btn:hover {
       filter: brightness(1.05);
     }
 
-    #add-btn:active {
+    .primary-btn:active {
       transform: translateY(1px);
       box-shadow: 0 4px 12px rgba(229, 60, 141, 0.4);
-    }
-
-    #add-btn:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-      box-shadow: none;
     }
 
     ul {
       list-style: none;
       padding: 0;
       margin: 2px 0 8px;
-      max-height: 300px;
+      max-height: 260px;
       overflow-y: auto;
       position: relative;
       z-index: 1;
@@ -355,30 +366,11 @@
       font-weight: 600;
     }
 
-    .chip.lab {
-      background: #ffe8d2;
-      color: #d86c00;
-    }
-
-    .chip.self {
-      background: #f5e4ff;
-      color: #8b46d9;
-    }
-
-    .chip.health {
-      background: #e5f9f0;
-      color: #109c5f;
-    }
-
-    .chip.admin {
-      background: #ffe3f4;
-      color: #d33692;
-    }
-
-    .chip.other {
-      background: #f2f2ff;
-      color: #6f6fd1;
-    }
+    .chip.lab { background: #ffe8d2; color: #d86c00; }
+    .chip.self { background: #f5e4ff; color: #8b46d9; }
+    .chip.health { background: #e5f9f0; color: #109c5f; }
+    .chip.admin { background: #ffe3f4; color: #d33692; }
+    .chip.other { background: #f2f2ff; color: #6f6fd1; }
 
     .delete-btn {
       background: transparent;
@@ -427,7 +419,8 @@
       font-weight: 600;
     }
 
-    #category-filter {
+    #category-filter,
+    #debt-filter {
       font-size: 11px;
       padding: 5px 10px;
       border-radius: var(--radius-pill);
@@ -436,15 +429,62 @@
       color: var(--text-main);
     }
 
-    @media (max-width: 480px) {
-      .app {
-        padding: 18px 14px;
-      }
+    /* Finance section styles */
+    .finance-card {
+      background: linear-gradient(135deg, #fffdfc, #fff1f8);
+      border-radius: 18px;
+      padding: 10px 12px;
+      border: 1px solid #ffe0f0;
+      margin-top: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .finance-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: var(--text-main);
+    }
+
+    .finance-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .mini-summary {
+      font-size: 11px;
+      margin-top: 4px;
+      color: var(--text-muted);
+    }
+
+    .badge {
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .badge-io {
+      background: #ffe3f4;
+      color: #d33692;
+    }
+
+    .badge-they {
+      background: #e5f9f0;
+      color: #109c5f;
+    }
+
+    .bill-due-soon {
+      color: #d33692;
+      font-weight: 600;
     }
   </style>
 </head>
 <body>
   <div class="app">
+    <!-- Header + mood -->
     <div class="top-bar">
       <div class="top-text">
         <div class="top-date-pill" id="today-pill">Today • --</div>
@@ -469,79 +509,127 @@
       </div>
     </div>
 
-    <h1>Daily To-Do</h1>
-    <p class="subtitle">Cute cycle-app vibes 💗 track tasks, due dates & wins.</p>
+    <!-- Main grid: left = todo, right = finance -->
+    <div class="grid">
+      <!-- LEFT: To-do -->
+      <div>
+        <h1 class="section-title">Daily To-Do</h1>
+        <p class="subtitle">Cute cycle-app vibes 💗 track tasks, due dates & wins.</p>
 
-    <form id="todo-form">
-      <div class="row">
-        <input
-          id="todo-input"
-          type="text"
-          placeholder="Type a task… e.g. '30 mins coding'"
-          autocomplete="off"
-        />
-        <button type="submit" id="add-btn">Add</button>
-      </div>
-      <div class="row">
-        <select id="category-select">
-          <option value="The Lab">The Lab</option>
-          <option value="Self Development" selected>Self Development</option>
-          <option value="Health">Health</option>
-          <option value="Admin/Errands">Admin/Errands</option>
-          <option value="Others">Others</option>
-        </select>
-        <input id="due-date" type="date" />
-        <input id="due-time" type="time" />
-      </div>
-    </form>
+        <form id="todo-form">
+          <div class="row">
+            <input
+              id="todo-input"
+              type="text"
+              placeholder="Type a task… e.g. '30 mins coding'"
+              autocomplete="off"
+            />
+            <button type="submit" class="primary-btn" id="add-btn">Add</button>
+          </div>
+          <div class="row">
+            <select id="category-select">
+              <option value="The Lab">The Lab</option>
+              <option value="Self Development" selected>Self Development</option>
+              <option value="Health">Health</option>
+              <option value="Admin/Errands">Admin/Errands</option>
+              <option value="Others">Others</option>
+            </select>
+            <input id="due-date" type="date" />
+            <input id="due-time" type="time" />
+          </div>
+        </form>
 
-    <ul id="todo-list"></ul>
+        <ul id="todo-list"></ul>
 
-    <div class="bottom">
-      <div class="bottom-top">
-        <span id="task-count">No tasks</span>
-        <div class="filter-btns">
-          <button data-filter="all" class="active">All</button>
-          <button data-filter="active">Active</button>
-          <button data-filter="done">Done</button>
+        <div class="bottom">
+          <div class="bottom-top">
+            <span id="task-count">No tasks</span>
+            <div class="filter-btns">
+              <button data-filter="all" class="active">All</button>
+              <button data-filter="active">Active</button>
+              <button data-filter="done">Done</button>
+            </div>
+          </div>
+          <div class="bottom-bottom">
+            <span>Category filter:</span>
+            <select id="category-filter">
+              <option value="all">All categories</option>
+              <option value="The Lab">The Lab</option>
+              <option value="Self Development">Self Development</option>
+              <option value="Health">Health</option>
+              <option value="Admin/Errands">Admin/Errands</option>
+              <option value="Others">Others</option>
+            </select>
+          </div>
         </div>
       </div>
-      <div class="bottom-bottom">
-        <span>Category filter:</span>
-        <select id="category-filter">
-          <option value="all">All categories</option>
-          <option value="The Lab">The Lab</option>
-          <option value="Self Development">Self Development</option>
-          <option value="Health">Health</option>
-          <option value="Admin/Errands">Admin/Errands</option>
-          <option value="Others">Others</option>
-        </select>
+
+      <!-- RIGHT: Finance -->
+      <div>
+        <!-- Debt tracker -->
+        <div class="finance-card">
+          <div class="finance-title">Debt Tracker</div>
+          <div class="finance-subtitle">
+            Catat siapa yang kamu utangin & siapa yang ngutang ke kamu.
+          </div>
+
+          <form id="debt-form">
+            <div class="row">
+              <input type="text" id="debt-name" placeholder="Name (e.g. Gio / Mama)" />
+              <input type="number" id="debt-amount" placeholder="Amount" min="0" step="1000" />
+            </div>
+            <div class="row">
+              <select id="debt-type">
+                <option value="i-owe">I owe someone</option>
+                <option value="they-owe">They owe me</option>
+              </select>
+              <input type="date" id="debt-due" />
+              <button type="submit" class="primary-btn">Add</button>
+            </div>
+          </form>
+
+          <ul id="debt-list"></ul>
+
+          <div class="mini-summary" id="debt-summary">
+            Total I owe: 0 • Total they owe me: 0
+          </div>
+        </div>
+
+        <!-- Monthly bills -->
+        <div class="finance-card">
+          <div class="finance-title">Monthly Bills</div>
+          <div class="finance-subtitle">
+            Reminder tagihan bulanan (manual, disimpan di browser kamu).
+          </div>
+
+          <form id="bill-form">
+            <div class="row">
+              <input type="text" id="bill-name" placeholder="Bill name (e.g. Netflix)" />
+              <input type="number" id="bill-amount" placeholder="Amount" min="0" step="1000" />
+            </div>
+            <div class="row">
+              <input type="date" id="bill-next-due" />
+              <button type="submit" class="primary-btn">Add</button>
+            </div>
+          </form>
+
+          <ul id="bill-list"></ul>
+
+          <div class="mini-summary" id="bill-summary">
+            Bills due in next 7 days: 0
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
   <script>
-    const form = document.getElementById("todo-form");
-    const input = document.getElementById("todo-input");
-    const list = document.getElementById("todo-list");
-    const taskCount = document.getElementById("task-count");
-    const filterButtons = document.querySelectorAll(".filter-btns button");
-    const categorySelect = document.getElementById("category-select");
-    const dueDateInput = document.getElementById("due-date");
-    const dueTimeInput = document.getElementById("due-time");
-    const categoryFilter = document.getElementById("category-filter");
-
+    /* ---------- Shared / mood ---------- */
     const todayPill = document.getElementById("today-pill");
     const moodLabel = document.getElementById("mood-label");
     const moodButtons = document.querySelectorAll(".mood-btn");
 
-    const STORAGE_KEY_V2 = "fira-todo-list-v2";
-    const STORAGE_KEY_V1 = "fira-todo-list-v1";
     const MOOD_KEY_PREFIX = "fira-mood-";
-
-    let tasks = [];
-    let currentFilter = "all";
-    let currentCategoryFilter = "all";
 
     function getTodayKey() {
       const d = new Date();
@@ -557,6 +645,61 @@
       });
       todayPill.textContent = "Today • " + dateText;
     }
+
+    function loadMood() {
+      const key = MOOD_KEY_PREFIX + getTodayKey();
+      const saved = localStorage.getItem(key);
+      if (!saved) {
+        moodLabel.textContent = "not set yet";
+        moodButtons.forEach((b) => b.classList.remove("active"));
+        return;
+      }
+      try {
+        const { mood, emoji } = JSON.parse(saved);
+        moodLabel.textContent = `${emoji} ${mood}`;
+        moodButtons.forEach((btn) => {
+          const isActive =
+            btn.dataset.mood === mood && btn.dataset.emoji === emoji;
+          btn.classList.toggle("active", isActive);
+        });
+      } catch {
+        moodLabel.textContent = "not set yet";
+      }
+    }
+
+    function saveMood(mood, emoji) {
+      const key = MOOD_KEY_PREFIX + getTodayKey();
+      localStorage.setItem(key, JSON.stringify({ mood, emoji }));
+    }
+
+    moodButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const mood = btn.dataset.mood;
+        const emoji = btn.dataset.emoji;
+        moodButtons.forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        moodLabel.textContent = `${emoji} ${mood}`;
+        saveMood(mood, emoji);
+      });
+    });
+
+    /* ---------- To-do logic ---------- */
+    const form = document.getElementById("todo-form");
+    const input = document.getElementById("todo-input");
+    const list = document.getElementById("todo-list");
+    const taskCount = document.getElementById("task-count");
+    const filterButtons = document.querySelectorAll(".filter-btns button");
+    const categorySelect = document.getElementById("category-select");
+    const dueDateInput = document.getElementById("due-date");
+    const dueTimeInput = document.getElementById("due-time");
+    const categoryFilter = document.getElementById("category-filter");
+
+    const STORAGE_KEY_V2 = "fira-todo-list-v2";
+    const STORAGE_KEY_V1 = "fira-todo-list-v1";
+
+    let tasks = [];
+    let currentFilter = "all";
+    let currentCategoryFilter = "all";
 
     function mapCategoryToClass(category) {
       if (category === "The Lab") return "lab";
@@ -779,45 +922,244 @@
       setCategoryFilter(categoryFilter.value);
     });
 
-    function loadMood() {
-      const key = MOOD_KEY_PREFIX + getTodayKey();
-      const saved = localStorage.getItem(key);
-      if (!saved) {
-        moodLabel.textContent = "not set yet";
-        moodButtons.forEach((b) => b.classList.remove("active"));
-        return;
-      }
-      try {
-        const { mood, emoji } = JSON.parse(saved);
-        moodLabel.textContent = `${emoji} ${mood}`;
-        moodButtons.forEach((btn) => {
-          const isActive =
-            btn.dataset.mood === mood && btn.dataset.emoji === emoji;
-          btn.classList.toggle("active", isActive);
-        });
-      } catch {
-        moodLabel.textContent = "not set yet";
-      }
+    /* ---------- Debt tracker ---------- */
+    const debtForm = document.getElementById("debt-form");
+    const debtNameInput = document.getElementById("debt-name");
+    const debtAmountInput = document.getElementById("debt-amount");
+    const debtTypeSelect = document.getElementById("debt-type");
+    const debtDueInput = document.getElementById("debt-due");
+    const debtList = document.getElementById("debt-list");
+    const debtSummary = document.getElementById("debt-summary");
+
+    const STORAGE_DEBTS = "fira-debts-v1";
+    let debts = [];
+
+    function loadDebts() {
+      const saved = localStorage.getItem(STORAGE_DEBTS);
+      debts = saved ? JSON.parse(saved) : [];
+      renderDebts();
     }
 
-    function saveMood(mood, emoji) {
-      const key = MOOD_KEY_PREFIX + getTodayKey();
-      localStorage.setItem(key, JSON.stringify({ mood, emoji }));
+    function saveDebts() {
+      localStorage.setItem(STORAGE_DEBTS, JSON.stringify(debts));
     }
 
-    moodButtons.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const mood = btn.dataset.mood;
-        const emoji = btn.dataset.emoji;
-        moodButtons.forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
-        moodLabel.textContent = `${emoji} ${mood}`;
-        saveMood(mood, emoji);
+    function addDebt(name, amount, type, dueDate) {
+      const trimmed = name.trim();
+      const num = Number(amount);
+      if (!trimmed || !num) return;
+      debts.push({
+        id: Date.now(),
+        name: trimmed,
+        amount: num,
+        type,
+        dueDate: dueDate || "",
       });
+      saveDebts();
+      renderDebts();
+    }
+
+    function deleteDebt(id) {
+      debts = debts.filter((d) => d.id !== id);
+      saveDebts();
+      renderDebts();
+    }
+
+    function renderDebts() {
+      debtList.innerHTML = "";
+      let totalIOwe = 0;
+      let totalTheyOwe = 0;
+
+      debts.forEach((debt) => {
+        if (debt.type === "i-owe") totalIOwe += debt.amount;
+        else totalTheyOwe += debt.amount;
+
+        const li = document.createElement("li");
+
+        const left = document.createElement("div");
+        left.style.flex = "1";
+
+        const title = document.createElement("div");
+        title.className = "task-text";
+        title.textContent =
+          debt.type === "i-owe"
+            ? `${debt.name} – I owe`
+            : `${debt.name} – owes me`;
+        left.appendChild(title);
+
+        const meta = document.createElement("div");
+        meta.className = "task-meta";
+
+        const amountSpan = document.createElement("span");
+        amountSpan.textContent = `Amount: ${debt.amount.toLocaleString("id-ID")}`;
+        meta.appendChild(amountSpan);
+
+        if (debt.dueDate) {
+          const dueSpan = document.createElement("span");
+          dueSpan.textContent = "Due: " + formatDate(debt.dueDate);
+          meta.appendChild(dueSpan);
+        }
+
+        const badge = document.createElement("span");
+        badge.className =
+          "badge " + (debt.type === "i-owe" ? "badge-io" : "badge-they");
+        badge.textContent = debt.type === "i-owe" ? "I owe" : "They owe me";
+        meta.appendChild(badge);
+
+        left.appendChild(meta);
+
+        const delBtn = document.createElement("button");
+        delBtn.className = "delete-btn";
+        delBtn.textContent = "Delete";
+        delBtn.addEventListener("click", () => deleteDebt(debt.id));
+
+        li.appendChild(left);
+        li.appendChild(delBtn);
+        debtList.appendChild(li);
+      });
+
+      debtSummary.textContent =
+        `Total I owe: ${totalIOwe.toLocaleString("id-ID")} • ` +
+        `Total they owe me: ${totalTheyOwe.toLocaleString("id-ID")}`;
+    }
+
+    debtForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      addDebt(
+        debtNameInput.value,
+        debtAmountInput.value,
+        debtTypeSelect.value,
+        debtDueInput.value
+      );
+      debtNameInput.value = "";
+      debtAmountInput.value = "";
+      debtDueInput.value = "";
+      debtNameInput.focus();
     });
 
+    /* ---------- Monthly bills ---------- */
+    const billForm = document.getElementById("bill-form");
+    const billNameInput = document.getElementById("bill-name");
+    const billAmountInput = document.getElementById("bill-amount");
+    const billNextDueInput = document.getElementById("bill-next-due");
+    const billList = document.getElementById("bill-list");
+    const billSummary = document.getElementById("bill-summary");
+
+    const STORAGE_BILLS = "fira-bills-v1";
+    let bills = [];
+
+    function loadBills() {
+      const saved = localStorage.getItem(STORAGE_BILLS);
+      bills = saved ? JSON.parse(saved) : [];
+      renderBills();
+    }
+
+    function saveBills() {
+      localStorage.setItem(STORAGE_BILLS, JSON.stringify(bills));
+    }
+
+    function addBill(name, amount, nextDue) {
+      const trimmed = name.trim();
+      const num = Number(amount);
+      if (!trimmed || !num || !nextDue) return;
+      bills.push({
+        id: Date.now(),
+        name: trimmed,
+        amount: num,
+        nextDue,
+      });
+      saveBills();
+      renderBills();
+    }
+
+    function deleteBill(id) {
+      bills = bills.filter((b) => b.id !== id);
+      saveBills();
+      renderBills();
+    }
+
+    function daysUntil(dateStr) {
+      const today = new Date();
+      const target = new Date(dateStr);
+      if (isNaN(target.getTime())) return null;
+      const diffMs = target.setHours(0,0,0,0) - today.setHours(0,0,0,0);
+      return Math.round(diffMs / (1000 * 60 * 60 * 24));
+    }
+
+    function renderBills() {
+      billList.innerHTML = "";
+      let dueSoonCount = 0;
+
+      bills.forEach((bill) => {
+        const li = document.createElement("li");
+
+        const left = document.createElement("div");
+        left.style.flex = "1";
+
+        const title = document.createElement("div");
+        title.className = "task-text";
+        title.textContent = bill.name;
+        left.appendChild(title);
+
+        const meta = document.createElement("div");
+        meta.className = "task-meta";
+
+        const amountSpan = document.createElement("span");
+        amountSpan.textContent = `Rp ${bill.amount.toLocaleString("id-ID")}`;
+        meta.appendChild(amountSpan);
+
+        const dueSpan = document.createElement("span");
+        const days = daysUntil(bill.nextDue);
+        let dueText = "Next due: " + formatDate(bill.nextDue);
+        if (days !== null) {
+          if (days < 0) {
+            dueText += ` (overdue ${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"})`;
+          } else if (days === 0) {
+            dueText += " (today)";
+            dueSpan.classList.add("bill-due-soon");
+            dueSoonCount++;
+          } else if (days <= 7) {
+            dueText += ` (in ${days} day${days === 1 ? "" : "s"})`;
+            dueSpan.classList.add("bill-due-soon");
+            dueSoonCount++;
+          }
+        }
+        dueSpan.textContent = dueText;
+        meta.appendChild(dueSpan);
+
+        left.appendChild(meta);
+
+        const delBtn = document.createElement("button");
+        delBtn.className = "delete-btn";
+        delBtn.textContent = "Delete";
+        delBtn.addEventListener("click", () => deleteBill(bill.id));
+
+        li.appendChild(left);
+        li.appendChild(delBtn);
+        billList.appendChild(li);
+      });
+
+      billSummary.textContent = `Bills due in next 7 days: ${dueSoonCount}`;
+    }
+
+    billForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      addBill(
+        billNameInput.value,
+        billAmountInput.value,
+        billNextDueInput.value
+      );
+      billNameInput.value = "";
+      billAmountInput.value = "";
+      billNextDueInput.value = "";
+      billNameInput.focus();
+    });
+
+    /* ---------- Init ---------- */
     setTodayPill();
     loadTasks();
+    loadDebts();
+    loadBills();
     loadMood();
   </script>
 </body>
