@@ -1,3 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Fira's Life Dashboard</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #ffeaf4, #ffeef9);
+      --primary: #ff4fa3;
+      --primary-soft: #ff7ac4;
+      --primary-dark: #e53c8d;
+      --card-bg: #ffffff;
+      --text-main: #323232;
+      --text-muted: #8e8e99;
+      --border-soft: #ffe0f0;
+      --shadow-soft: 0 18px 40px rgba(255, 120, 196, 0.24);
+      --radius-card: 22px;
+      --radius-pill: 999px;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: var(--bg-gradient);
+      padding: 18px;
+    }
+
+    .app {
+      background: var(--card-bg);
+      width: 100%;
+      max-width: 720px;
+      padding: 22px 20px 18px;
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .app::before,
+    .app::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(40px);
+      opacity: 0.4;
+      pointer-events: none;
+    }
+    .app::before {
+      width: 180px;
+      height: 180px;
+      background: #ffe0f7;
+      top: -70px;
+      right: -40px;
+    }
+    .app::after {
+      width: 160px;
+      height: 160px;
+      background: #ffe8c6;
+      bottom: -70px;
+      left: -40px;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .top-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .top-date-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: var(--radius-pill);
+      background: #ffe9f6;
+      color: var(--primary-dark);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .top-greeting {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .top-question {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .avatar-block {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ffd6f0, #ff9ccf);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: #ffffff;
+      font-size: 18px;
+      box-shadow: 0 6px 14px rgba(255, 120, 196, 0.45);
+      flex-shrink: 0;
+    }
+
+    #auth-btn {
+      border: none;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 600;
+      background: #ffe3f4;
+      color: #d33692;
+      cursor: pointer;
+    }
+
+    #auth-status {
+      font-size: 9px;
+      color: var(--text-muted);
+      max-width: 160px;
+      text-align: right;
+      word-break: break-all;
+    }
+
+    .mood-card {
+      background: linear-gradient(135deg, #fff1f8, #fffdfc);
+      border-radius: 18px;
+      padding: 10px 12px;
+      border: 1px solid #ffe0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .mood-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .mood-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .mood-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .mood-label {
+      font-weight: 600;
+      color: var(--primary-dark);
+    }
+
+    .mood-options {
+      display: flex;
+      gap: 6px;
+    }
+
+    .mood-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid transparent;
+      background: #ffffffcc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .mood-btn.active {
+      border-color: #ffd3ec;
+      background: #ffe6f5;
+      box-shadow: 0 4px 10px rgba(255, 120, 196, 0.45);
+      transform: translateY(-1px);
+    }
+
+    h1.section-title {
+      margin: 8px 0 2px;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      color: var(--text-main);
+      position: relative;
+      z-index: 1;
+    }
+
+    .subtitle {
+      margin: 0 0 16px;
+      font-size: 12px;
+      color: var(--text-muted);
+      position: relative;
+      z-index: 1;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 720px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .app {
+        padding: 18px 14px;
+      }
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 14px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    input[type="text"],
+    select,
+    input[type="date"],
+    input[type="time"],
+    input[type="number"] {
+      padding: 9px 11px;
+      border-radius: 14px;
+      border: 1px solid #f7d7ec;
+      font-size: 13px;
+      background: #fff9fd;
+      color: var(--text-main);
+    }
+
+    input[type="text"],
+    input[type="number"] {
+      flex: 1;
+      min-width: 120px;
+    }
+
+    select,
+    input[type="date"],
+    input[type="time"] {
+      flex: 1;
+      min-width: 120px;
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(255, 120, 196, 0.4);
+      background: #fff;
+    }
+
+    button {
+      border: none;
+      padding: 9px 16px;
+      border-radius: 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .primary-btn {
+      background-image: linear-gradient(135deg, var(--primary-soft), var(--primary));
+      color: white;
+      box-shadow: 0 8px 18px rgba(229, 60, 141, 0.35);
+    }
+
+    .primary-btn:hover {
+      filter: brightness(1.05);
+    }
+
+    .primary-btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 4px 12px rgba(229, 60, 141, 0.4);
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 2px 0 8px;
+      max-height: 260px;
+      overflow-y: auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    li {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      margin-bottom: 6px;
+      border-radius: 14px;
+      background: linear-gradient(
+        120deg,
+        #fff1f8,
+        #fff7fb 40%,
+        #ffffff 100%
+      );
+      border: 1px solid #ffe0f0;
+      font-size: 13px;
+    }
+
+    .task-main {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .task-main input[type="checkbox"] {
+      margin-top: 3px;
+      accent-color: var(--primary);
+    }
+
+    .task-text {
+      font-weight: 600;
+      word-break: break-word;
+      color: var(--text-main);
+    }
+
+    .done .task-text {
+      text-decoration: line-through;
+      color: #b3a5b2;
+      font-weight: 500;
+    }
+
+    .task-meta {
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 10px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 9px;
+      border-radius: var(--radius-pill);
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .chip.lab { background: #ffe8d2; color: #d86c00; }
+    .chip.self { background: #f5e4ff; color: #8b46d9; }
+    .chip.health { background: #e5f9f0; color: #109c5f; }
+    .chip.admin { background: #ffe3f4; color: #d33692; }
+    .chip.other { background: #f2f2ff; color: #6f6fd1; }
+
+    .delete-btn {
+      background: transparent;
+      color: #ff6a88;
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+
+    .delete-btn:hover {
+      color: #ff3b6c;
+    }
+
+    .bottom {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .bottom-top,
+    .bottom-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btns button {
+      background: transparent;
+      color: var(--text-muted);
+      padding: 4px 9px;
+      font-size: 11px;
+      border-radius: var(--radius-pill);
+      border: 1px solid transparent;
+    }
+
+    .filter-btns button.active {
+      color: var(--primary-dark);
+      border-color: #ffd3ec;
+      background: #ffe9f6;
+      font-weight: 600;
+    }
+
+    #category-filter {
+      font-size: 11px;
+      padding: 5px 10px;
+      border-radius: var(--radius-pill);
+      border: 1px solid #f7d7ec;
+      background: #fff9fd;
+      color: var(--text-main);
+    }
+
+    .finance-card {
+      background: linear-gradient(135deg, #fffdfc, #fff1f8);
+      border-radius: 18px;
+      padding: 10px 12px;
+      border: 1px solid #ffe0f0;
+      margin-top: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .finance-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: var(--text-main);
+    }
+
+    .finance-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .mini-summary {
+      font-size: 11px;
+      margin-top: 4px;
+      color: var(--text-muted);
+    }
+
+    .badge {
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .badge-io {
+      background: #ffe3f4;
+      color: #d33692;
+    }
+
+    .badge-they {
+      background: #e5f9f0;
+      color: #109c5f;
+    }
+
+    .bill-due-soon {
+      color: #d33692;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="top-bar">
+      <div class="top-text">
+        <div class="top-date-pill" id="today-pill">Today • --</div>
+        <div class="top-greeting">Hi, Fira 👋</div>
+        <div class="top-question">How do you feel today?</div>
+      </div>
+      <div class="avatar-block">
+        <div class="avatar">F</div>
+        <button id="auth-btn">Sign in</button>
+        <span id="auth-status"></span>
+      </div>
+    </div>
+
+    <div class="mood-card">
+      <div class="mood-left">
+        <div class="mood-title">Today’s mood</div>
+        <div class="mood-subtitle">
+          You feel: <span class="mood-label" id="mood-label">not set yet</span>
+        </div>
+      </div>
+      <div class="mood-options">
+        <button class="mood-btn" data-mood="Tired" data-emoji="😭">😭</button>
+        <button class="mood-btn" data-mood="Meh" data-emoji="😐">😐</button>
+        <button class="mood-btn" data-mood="Okay" data-emoji="🙂">🙂</button>
+        <button class="mood-btn" data-mood="Excited" data-emoji="🤩">🤩</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- LEFT: To-do -->
+      <div>
+        <h1 class="section-title">Daily To-Do</h1>
+        <p class="subtitle">Tasks sync across devices when you sign in 💗</p>
+
+        <form id="todo-form">
+          <div class="row">
+            <input
+              id="todo-input"
+              type="text"
+              placeholder="Type a task… e.g. '30 mins coding'"
+              autocomplete="off"
+            />
+            <button type="submit" class="primary-btn" id="add-btn">Add</button>
+          </div>
+          <div class="row">
+            <select id="category-select">
+              <option value="The Lab">The Lab</option>
+              <option value="Self Development" selected>Self Development</option>
+              <option value="Health">Health</option>
+              <option value="Admin/Errands">Admin/Errands</option>
+              <option value="Others">Others</option>
+            </select>
+            <input id="due-date" type="date" />
+            <input id="due-time" type="time" />
+          </div>
+        </form>
+
+        <ul id="todo-list"></ul>
+
+        <div class="bottom">
+          <div class="bottom-top">
+            <span id="task-count">No tasks</span>
+            <div class="filter-btns">
+              <button data-filter="all" class="active">All</button>
+              <button data-filter="active">Active</button>
+              <button data-filter="done">Done</button>
+            </div>
+          </div>
+          <div class="bottom-bottom">
+            <span>Category filter:</span>
+            <select id="category-filter">
+              <option value="all">All categories</option>
+              <option value="The Lab">The Lab</option>
+              <option value="Self Development">Self Development</option>
+              <option value="Health">Health</option>
+              <option value="Admin/Errands">Admin/Errands</option>
+              <option value="Others">Others</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Finance -->
+      <div>
+        <!-- Debt tracker -->
+        <div class="finance-card">
+          <div class="finance-title">Debt Tracker</div>
+          <div class="finance-subtitle">
+            Catat siapa yang kamu utangin & siapa yang ngutang ke kamu
+            (sync ke Firestore, per akun Google).
+          </div>
+
+          <form id="debt-form">
+            <div class="row">
+              <input type="text" id="debt-name" placeholder="Name (e.g. Gio / Mama)" />
+              <input type="number" id="debt-amount" placeholder="Amount" min="0" step="1000" />
+            </div>
+            <div class="row">
+              <select id="debt-type">
+                <option value="i-owe">I owe someone</option>
+                <option value="they-owe">They owe me</option>
+              </select>
+              <input type="date" id="debt-due" />
+              <button type="submit" class="primary-btn">Add</button>
+            </div>
+          </form>
+
+          <ul id="debt-list"></ul>
+
+          <div class="mini-summary" id="debt-summary">
+            Total I owe: 0 • Total they owe me: 0
+          </div>
+        </div>
+
+        <!-- Monthly bills -->
+        <div class="finance-card">
+          <div class="finance-title">Monthly Bills</div>
+          <div class="finance-subtitle">
+            Reminder tagihan bulanan (sync ke Firestore per akun).
+          </div>
+
+          <form id="bill-form">
+            <div class="row">
+              <input type="text" id="bill-name" placeholder="Bill name (e.g. Netflix)" />
+              <input type="number" id="bill-amount" placeholder="Amount" min="0" step="1000" />
+            </div>
+            <div class="row">
+              <input type="date" id="bill-next-due" />
+              <button type="submit" class="primary-btn">Add</button>
+            </div>
+          </form>
+
+          <ul id="bill-list"></ul>
+
+          <div class="mini-summary" id="bill-summary">
+            Bills due in next 7 days: 0
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- APP LOGIC + FIREBASE -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import {
@@ -582,3 +1240,5 @@
     setTodayPill();
     loadMood();
   </script>
+</body>
+</html>
